@@ -1,0 +1,114 @@
+﻿@model MySmartHome.Controllers.HomeController.HomeIndexData
+@{
+    var conf1 = MySmartHome.Models.SmartHomeConfig.Deserialize(Model.unit1.Config);
+    bool alarmState = (Model.jablotron.State != "IDLE");
+    if (Model.jablotron.CommandToExecute != "")
+    {
+        alarmState = Model.jablotron.CommandToExecute != "DISARM";
+    }
+    string alarmText = "N/A";
+    string alarmColor = "label-default";
+
+    switch (Model.jablotron.State)
+    {
+        case "DISCONNECTED":
+            alarmText = "DISCONNECTED";
+            alarmColor = "label-danger";
+            break;
+        case "IDLE":
+            alarmText = "OFF";
+            alarmColor = "label-default";
+            break;
+        case "OUTCOMMINGDELAY":
+            alarmText = "ARMED →";
+            alarmColor = "label-warning";
+            break;
+        case "INCOMMINGDELAY":
+            alarmText = "ARMED ←";
+            alarmColor = "label-warning";
+            break;
+        case "ARMED":
+            alarmText = "ARMED";
+            alarmColor = "label-warning";
+            break;
+        case "ALARM":
+            alarmText = "ALARM";
+            alarmColor = "label-danger";
+            break;
+    }
+
+}
+
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <h2 class="card-title">House</h2>
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Alarm
+                            </div>
+                            <div class="col-sm-6 pull-right text-right" ">
+                                <img onclick="window.location.href='/?cmd=switchalarm'" src="@Html.Raw(alarmState ? "/Img/toggle-on-red.png" : "/Img/toggle-off.png" )" style="height: 24px; cursor: pointer" />
+                                <span class="label @Html.Raw(alarmColor)">
+                                    @alarmText
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Outside temperature
+                            </div>
+                            <div class="col-sm-6 pull-right text-right" ">
+                                <span class="label label-default">@Model.unit1.Temperature.ToString("0.0")°C</span>
+                            </div>
+                        </div>
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Irrigation
+                            </div>
+                            <div class="col-sm-6 pull-right text-right" ">
+                                <img onclick="window.location.href='/?cmd=switchwater'" src="@Html.Raw(conf1.irrigationOn ? "/Img/toggle-on-blue.png" : "/Img/toggle-off.png")" style="height: 24px; cursor: pointer" />
+                                <span class="label @Html.Raw(Model.unit1.WaterOn?"label-primary": conf1.irrigationOn?"label-default":"label-default")">
+                                    @(Model.unit1.WaterOn ? "ON" : conf1.irrigationOn ? "IDLE" : "OFF")
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Moisture sensor
+                            </div>
+                            <div class="col-sm-6 pull-right text-right">
+                                <span class="label @Html.Raw(Model.unit1.IsWet?"label-primary":"label-danger")">@(Model.unit1.IsWet ? "WET" : "DRY")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <h3 class="card-title">Dog House</h3>
+
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Temperature
+                            </div>
+                            <div class="col-sm-6 pull-right text-right" ">
+                                <span class="label label-default">@Model.unit1.DogHouseTemperature.ToString("0.0")°C</span>
+                            </div>
+                        </div>
+                        <div class="row label-lg">
+                            <div class="col-sm-6 pull-left">
+                                Heating
+                            </div>
+                            <div class="col-sm-6  pull-right text-right" ">
+                                <span class="label @Html.Raw(Model.unit1.DogHouseHeatingOn?"label-danger":"label-default")">@(Model.unit1.DogHouseHeatingOn ? "ON" : "OFF")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+

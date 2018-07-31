@@ -1,0 +1,138 @@
+﻿@model MySmartHome.Controllers.HomeController.StatObject
+@{
+    ViewBag.Title = "Statistics";
+
+    var _labels = new System.Text.StringBuilder();
+    var _temp = new System.Text.StringBuilder();
+    var _dogtemp = new System.Text.StringBuilder();
+    var _wateron = new System.Text.StringBuilder();
+    var _dogheat = new System.Text.StringBuilder();
+    var _iswet = new System.Text.StringBuilder();
+    var _mins = new System.Text.StringBuilder();
+
+    bool isfirst = true;
+    foreach(var i in Model.items)
+    {
+        if (isfirst)
+        {
+            isfirst = false;
+        }
+        else
+        {
+            _labels.Append(",");
+            _temp.Append(",");
+            _dogheat.Append(",");
+            _dogtemp.Append(",");
+            _wateron.Append(",");
+            _iswet.Append(",");
+            _mins.Append(",");
+        }
+        //if (i.time.EndsWith(":00"))
+        //{
+            _labels.Append("\"");
+            _labels.Append(i.time);
+            _labels.Append("\"");
+        //}
+        //else
+        //{
+        //    _labels.Append("\"\"");
+        //}
+        _mins.Append(Model.min.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _temp.Append(i.temp.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _dogtemp.Append(i.dogtemp.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _dogheat.Append(i.dogheating ? 10 : 0);
+        _wateron.Append(i.wateron ? 10 : 0);
+        _iswet.Append((i.iswet ? Model.max : Model.min).ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
+}
+
+<h2>Statistics</h2>
+
+<div class="row">
+    <div class="col-lg-12">
+        <canvas id="myChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script>
+    window.onload = function (e) {
+        var ctx = document.getElementById("myChart").getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [@Html.Raw(_labels)],
+                datasets: [
+                    {
+                    fill: false,
+                    data: [@_temp],
+                    backgroundColor: 'rgba(0,0,0,1)',
+                    borderColor: 'rgba(0,0,0,1)',
+                    borderWidth: 4,
+                    pointRadius: 0
+                    },
+                    {
+                        fill: false,
+                        borderDash: [5,5],
+                        data: [@_dogtemp],
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        borderColor: 'rgba(0,0,0,0.5)',
+                        borderWidth: 4,
+                        pointRadius: 0
+                    },
+                    {
+                        fill: true,
+                        borderDash: [5, 5],
+                        data: [@_iswet],
+                        backgroundColor: 'rgba(0,128,255,0.1)',
+                        borderColor: 'rgba(0,128,255,0.2)',
+                        borderWidth: 1,
+                        pointRadius: 0
+                    },
+                    {
+                        fill: true,
+                        borderDash: [5, 5],
+                        data: [@_mins],
+                        backgroundColor: 'rgba(255,0,0,0.2)',
+                        borderColor: 'rgba(255,0,0,0.4)',
+                        showLine: false,
+                        pointRadius: [@_dogheat]
+                    },
+                    {
+                        fill: true,
+                        borderDash: [5, 5],
+                        data: [@_mins],
+                        backgroundColor: 'rgba(0,0,255,0.2)',
+                        borderColor: 'rgba(0,0,255,0.4)',
+                        showLine: false,
+                        pointRadius: [@_wateron]
+                    }
+                ]
+            },
+            options: {
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            color: "rgba(0, 0, 0, 0)",
+                        },
+                        ticks: {
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            min: @Model.min.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            max: @Model.max.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        }
+                    }]
+                }
+            }
+        });
+    }
+</script>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/chartjs")
+}
+
