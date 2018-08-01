@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHomeJablotron", "Smart
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IoT", "IoT\IoT.vcxproj", "{6F198F2D-2413-434D-BCA2-161B454F3A1E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Doc", "Doc\Doc.vcxproj", "{24854801-67E6-4AA7-A57C-6A62A5637483}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,6 +69,16 @@ Global
 		{6F198F2D-2413-434D-BCA2-161B454F3A1E}.Release|x64.Build.0 = Release|x64
 		{6F198F2D-2413-434D-BCA2-161B454F3A1E}.Release|x86.ActiveCfg = Release|Win32
 		{6F198F2D-2413-434D-BCA2-161B454F3A1E}.Release|x86.Build.0 = Release|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Debug|x64.ActiveCfg = Debug|x64
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Debug|x64.Build.0 = Debug|x64
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Debug|x86.ActiveCfg = Debug|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Debug|x86.Build.0 = Debug|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Release|Any CPU.ActiveCfg = Release|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Release|x64.ActiveCfg = Release|x64
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Release|x64.Build.0 = Release|x64
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Release|x86.ActiveCfg = Release|Win32
+		{24854801-67E6-4AA7-A57C-6A62A5637483}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
