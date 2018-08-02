@@ -14,8 +14,8 @@
 
 #define USE_SERIAL Serial
 
-#define IOPUMP 4 
-#define IOHEATING 5 
+#define IOPUMP 4 // D2
+#define IOHEATING 5 // D1
 
 #define MAXERRCOUNT 10
 #define CHECKDELAY 10000
