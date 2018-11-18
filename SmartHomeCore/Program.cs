@@ -16,7 +16,7 @@ namespace SmartHomeCore
             var thr = new WorkThread();
             thr.Start();
 
-            var http = new MyHttpServerHeatingControler(11080);
+            var http = new MyHttpServerControler(11080);
 
             while (true)
             {

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SmartHomeCore
 {
-    public class MyHttpServerHeatingControler
+    public class MyHttpServerControler
     {
         private Thread _serverThread;
         private HttpListener _listener;
@@ -25,7 +25,7 @@ namespace SmartHomeCore
         /// Construct server with given port.
         /// </summary>
         /// <param name="port">Port of the server.</param>
-        public MyHttpServerHeatingControler(int port)
+        public MyHttpServerControler(int port)
         {
             this.Initialize(port);
         }
@@ -80,7 +80,6 @@ namespace SmartHomeCore
                             resp += 1;
                         }
                         sw.WriteLine(resp.ToString());
-                        sw.Flush();
                     }
                     break;
                 case "/outunit.api":
@@ -93,7 +92,6 @@ namespace SmartHomeCore
                             resp += 1;
                         }
                         sw.WriteLine(resp.ToString());
-                        sw.Flush();
                     }
                     break;
                 default:
@@ -101,7 +99,11 @@ namespace SmartHomeCore
                     break;
             }
 
-            context.Response.OutputStream.Close();
+            try
+            {
+                context.Response.OutputStream.Close();
+            }
+            catch { }
         }
 
         private void Initialize(int port)

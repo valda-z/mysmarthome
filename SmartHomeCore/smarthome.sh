@@ -1,4 +1,4 @@
-﻿#! /bin/sh
+#! /bin/sh
 ### BEGIN INIT INFO
 # Provides:             grizzlik
 # Required-Start:       $local_fs $remote_fs $network $syslog
@@ -35,7 +35,7 @@ d_start()
                        --chdir $GRDIR \
                        --background -m \
                        --chuid root \
-                       --exec /usr/bin/mono SmartHomeJablotron.exe
+                       --exec ./SmartHomeCore
     fi
 }
  
