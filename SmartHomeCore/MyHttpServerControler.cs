@@ -80,6 +80,7 @@ namespace SmartHomeCore
                             resp += 1;
                         }
                         sw.WriteLine(resp.ToString());
+                        Console.WriteLine(" >>http-req: {0}  => {1}", filename, resp);
                     }
                     break;
                 case "/outunit.api":
@@ -92,6 +93,7 @@ namespace SmartHomeCore
                             resp += 1;
                         }
                         sw.WriteLine(resp.ToString());
+                        Console.WriteLine(" >>http-req: {0}  => {1}", filename, resp);
                     }
                     break;
                 default:

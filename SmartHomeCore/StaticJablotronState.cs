@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,9 +19,13 @@ namespace SmartHomeCore
             get { return (lastMove.AddMinutes(delayToOff)>DateTime.Now); }
             set
             {
-                if(!(lastMove.AddMinutes(delayToOff) < DateTime.Now
+                Console.WriteLine(" >>last-move: try to set - now:{0}  => lastMove:{1}", 
+                    DateTime.Now.ToString("u", DateTimeFormatInfo.InvariantInfo),
+                    lastMove.ToString("u", DateTimeFormatInfo.InvariantInfo));
+                if (!(lastMove.AddMinutes(delayToOff) < DateTime.Now
                     && lastMove.AddMinutes(delayToOff+delayToOn) > DateTime.Now))
                 {
+                    Console.WriteLine(" >>last-move: SET");
                     lastMove = DateTime.Now;
                 }
             }

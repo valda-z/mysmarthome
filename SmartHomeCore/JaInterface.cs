@@ -278,7 +278,7 @@ namespace JaLib
             // ED 51 0C 00 09 04 00 00 73 FF
             if (msg.Length == 10)
             {
-                Console.WriteLine(">>>>> {0}", BitConverter.ToString(msg));
+                //Console.WriteLine(">>>>> {0}", BitConverter.ToString(msg));
 
                 _lastContact = DateTime.Now;
 
