@@ -31,6 +31,8 @@ namespace SMartHomeUnit
             }
         }
 
+        private static int waterSensor = 0;
+
         public static bool GetWaterSensor()
         {
             try
@@ -38,12 +40,20 @@ namespace SMartHomeUnit
                 string test = File.ReadAllText("./devices/watersensor/value");
                 if(test.Length>0 && test.StartsWith("1"))
                 {
-                    return false;
+                    // is not wet
+                    waterSensor = 6;
                 }
                 else
                 {
-                    return true;
+                    // is wet
+                    if (waterSensor > 0)
+                    {
+                        waterSensor--;
+                    }
                 }
+
+                // return true if is wet
+                return waterSensor == 0;
             }
             catch (Exception ex)
             {
