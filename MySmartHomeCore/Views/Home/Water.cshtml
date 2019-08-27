@@ -1,0 +1,33 @@
+﻿@model MySmartHomeCore.Models.SmartHomeConfig
+@{
+    ViewBag.Title = "Water";
+}
+
+<h2>@ViewBag.Title.</h2>
+
+@using (Html.BeginForm("Water", "Home", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+{
+    @Html.AntiForgeryToken()
+    <h4>My Smart Home Setting</h4>
+
+    if (ViewBag.Saved == "YES")
+    {
+        <div class="alert alert-success">
+            Water switched ON!
+        </div>
+    }
+
+    <hr />
+    @Html.ValidationSummary("", new { @class = "text-danger" })
+    <div class="form-group">
+        <div class="col-md-12">
+            <input type="submit" class="btn btn-lg btn-primary" value="Water TEST" />
+        </div>
+    </div>
+}
+
+
+
+
+
+
