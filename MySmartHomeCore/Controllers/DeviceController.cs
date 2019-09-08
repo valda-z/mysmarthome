@@ -3,11 +3,9 @@ using MySmartHomeCore.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
+using Microsoft.Extensions.Options;
+
 
 namespace MySmartHomeCore.Controllers
 {
@@ -16,12 +14,19 @@ namespace MySmartHomeCore.Controllers
     [ApiController]
     public class DeviceController : ControllerBase
     {
+        private AppSettings AppSettings { get; set; }
+
+        public DeviceController(IOptions<AppSettings> settings)
+        {
+            AppSettings = settings.Value;
+        }
+
         [HttpPost("Log")]
         public JToken Log(string id, JToken data)
         {
             var gid = new Guid(id);
             var obj = SmartHomeDataList.Create(data.ToString());
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             // get device detail, if there is no device we will throw exception
             var device = cx.Devices.Single(e => e.DeviceId == gid);
             for(int i = 0; i < obj.data.Length; i++)

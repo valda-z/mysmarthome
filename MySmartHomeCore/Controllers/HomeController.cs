@@ -12,20 +12,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Options;
 using MySmartHomeCore.Models;
 using MySmartHomeCore.Security.Cryptography;
 
 namespace MySmartHomeCore.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "MYHOME")]
     public class HomeController : Controller
     {
+        private AppSettings AppSettings { get; set; }
 
         private ICompositeViewEngine _viewEngine;
 
-        public HomeController(ICompositeViewEngine viewEngine)
+        public HomeController(ICompositeViewEngine viewEngine, IOptions<AppSettings> settings)
         {
             _viewEngine = viewEngine;
+            AppSettings = settings.Value;
         }
 
         private string RenderPartialViewToString(string viewName, object model)
@@ -108,11 +111,11 @@ namespace MySmartHomeCore.Controllers
 
         public ActionResult IndexHash()
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             var model = new HomeIndexData();
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             model.unit1 = cx.Devices.Single(e => e.DeviceId == gid);
-            gid = new Guid(EnvSettings.JABLOTRON);
+            gid = new Guid(AppSettings.JABLOTRON);
             model.jablotron = cx.Jablotrons.Single(e => e.DeviceId == gid);
 
             return Content(model.checksum());
@@ -120,11 +123,11 @@ namespace MySmartHomeCore.Controllers
 
         public ActionResult IndexPartial()
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             var model = new HomeIndexData();
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             model.unit1 = cx.Devices.Single(e => e.DeviceId == gid);
-            gid = new Guid(EnvSettings.JABLOTRON);
+            gid = new Guid(AppSettings.JABLOTRON);
             model.jablotron = cx.Jablotrons.Single(e => e.DeviceId == gid);
 
             return Content(RenderPartialViewToString("_HomeData", model));
@@ -137,11 +140,11 @@ namespace MySmartHomeCore.Controllers
                 cmd = "";
             }
 
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             var model = new HomeIndexData();
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             model.unit1 = cx.Devices.Single(e => e.DeviceId == gid);
-            gid = new Guid(EnvSettings.JABLOTRON);
+            gid = new Guid(AppSettings.JABLOTRON);
             model.jablotron = cx.Jablotrons.Single(e => e.DeviceId == gid);
 
             switch (cmd)
@@ -178,7 +181,7 @@ namespace MySmartHomeCore.Controllers
         [HttpGet]
         public ActionResult Timeline()
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             var model = cx.EventLists.AsQueryable().OrderByDescending(e => e.Created).Take(25);
             return View(model);
         }
@@ -186,8 +189,8 @@ namespace MySmartHomeCore.Controllers
         [HttpGet]
         public ActionResult Setting()
         {
-            var cx = SmartHomeDBContext.Create();
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            var cx = SmartHomeDBContext.Create(AppSettings);
+            Guid gid = new Guid(AppSettings.UNIT1);
             var model = SmartHomeConfig.Deserialize(cx.Devices.Single(e => e.DeviceId == gid).Config);
             return View(model);
         }
@@ -195,8 +198,8 @@ namespace MySmartHomeCore.Controllers
         [HttpPost]
         public ActionResult Setting(IFormCollection form)
         {
-            var cx = SmartHomeDBContext.Create();
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            var cx = SmartHomeDBContext.Create(AppSettings);
+            Guid gid = new Guid(AppSettings.UNIT1);
             var model = cx.Devices.Single(e => e.DeviceId == gid);
             var conf = SmartHomeConfig.Deserialize(model.Config);
             conf.dogontemp = int.Parse(form["dogontemp"]);
@@ -222,8 +225,8 @@ namespace MySmartHomeCore.Controllers
         [HttpGet]
         public ActionResult SettingHeating()
         {
-            var cx = SmartHomeDBContext.Create();
-            Guid gid = new Guid(EnvSettings.JABLOTRON);
+            var cx = SmartHomeDBContext.Create(AppSettings);
+            Guid gid = new Guid(AppSettings.JABLOTRON);
             var model = SmartHomeConfig.Deserialize(cx.Devices.Single(e => e.DeviceId == gid).Config);
             return View(model);
         }
@@ -231,8 +234,8 @@ namespace MySmartHomeCore.Controllers
         [HttpPost]
         public ActionResult SettingHeating(IFormCollection form)
         {
-            var cx = SmartHomeDBContext.Create();
-            Guid gid = new Guid(EnvSettings.JABLOTRON);
+            var cx = SmartHomeDBContext.Create(AppSettings);
+            Guid gid = new Guid(AppSettings.JABLOTRON);
             var model = cx.Devices.Single(e => e.DeviceId == gid);
             var conf = SmartHomeConfig.Deserialize(model.Config);
             conf.homeheatingoutofhometemp = int.Parse(form["homeheatingoutofhometemp"]);
@@ -275,19 +278,19 @@ namespace MySmartHomeCore.Controllers
 
         public ActionResult Stats()
         {
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             return stats(gid);
         }
 
         public ActionResult StatsHome()
         {
-            Guid gid = new Guid(EnvSettings.JABLOTRON);
+            Guid gid = new Guid(AppSettings.JABLOTRON);
             return stats(gid);
         }
 
         private ActionResult stats(Guid gid)
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             var fromD = DateTime.Now.AddDays(-1);
             var toD = DateTime.Now;
             var firstlist = from s in cx.DeviceLogs
@@ -343,9 +346,9 @@ namespace MySmartHomeCore.Controllers
         [HttpGet]
         public ActionResult Water()
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             ViewBag.Saved = "";
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             var model = SmartHomeConfig.Deserialize(cx.Devices.Single(e => e.DeviceId == gid).Config);
             return View(model);
         }
@@ -353,9 +356,9 @@ namespace MySmartHomeCore.Controllers
         [HttpPost]
         public ActionResult Water(IFormCollection form)
         {
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             ViewBag.Saved = "YES";
-            Guid gid = new Guid(EnvSettings.UNIT1);
+            Guid gid = new Guid(AppSettings.UNIT1);
             var model = cx.Devices.Single(e => e.DeviceId == gid);
             var conf = SmartHomeConfig.Deserialize(model.Config);
             conf.water = new SmartHomeConfig.MySmartHomeConfigWaterHardOn();

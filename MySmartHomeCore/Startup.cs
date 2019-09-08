@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -33,16 +33,23 @@ namespace MySmartHomeCore
 
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddAuthentication(sharedOptions =>
+            {
+                sharedOptions.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                sharedOptions.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddAzureAd(options => Configuration.Bind("AzureAd", options))
+            .AddCookie();
 
-            SmartHomeDBContext.Create().Init();
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             IServiceProvider serviceProvider = services.BuildServiceProvider();
             IHostingEnvironment env = serviceProvider.GetService<IHostingEnvironment>();
 
+            //SmartHomeDBContext.Create().Init(Configuration.Get<AppSettings>(options => Configuration.Bind("AppSettings", options)));
             if (env.IsDevelopment())
             {
-                SmartHomeDBContext.Create().TestInit();
+            //    SmartHomeDBContext.Create().TestInit();
             }
         }
 
@@ -56,10 +63,17 @@ namespace MySmartHomeCore
             else
             {
                 app.UseExceptionHandler("/Home/Error");
+                app.Use((context, next) =>
+                {
+                    context.Request.Scheme = "https";
+                    return next();
+                });
             }
 
             app.UseStaticFiles();
             app.UseCookiePolicy();
+
+            app.UseAuthentication();
 
             app.UseMvc(routes =>
             {

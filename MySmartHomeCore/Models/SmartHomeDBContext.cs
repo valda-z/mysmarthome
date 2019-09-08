@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Web;
 
 namespace MySmartHomeCore.Models
@@ -35,14 +37,46 @@ namespace MySmartHomeCore.Models
         private string hashEventLists = "";
         private string hashJbalotrons = "";
 
-        public void TestInit()
+        Thread thr;
+
+        private void run(object obj)
+        {
+            while (true)
+            {
+                Thread.Sleep(60000);
+                try
+                {
+                    // cleanup
+                    while (EventLists.Count > 200)
+                    {
+                        EventLists.RemoveAt(0);
+                    }
+                    while (DeviceLogs.Count > 200)
+                    {
+                        DeviceLogs.RemoveAt(0);
+                    }
+                    // save data
+                    hashDevices = saveData(hashDevices, JsonConvert.SerializeObject(Devices), "devices");
+                    hashDeviceLogs = saveData(hashDeviceLogs, JsonConvert.SerializeObject(DeviceLogs), "devicelogs");
+                    hashEventLists = saveData(hashEventLists, JsonConvert.SerializeObject(EventLists), "eventlists");
+                    hashJbalotrons = saveData(hashJbalotrons, JsonConvert.SerializeObject(Jablotrons), "jablotrons");
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        AppSettings apsettings = null;
+
+        public void DataInit()
         {
             if (Devices.Count == 0)
             {
                 var u1 = new Device();
                 u1.Config = "{\"dogontemp\":5.0,\"irrigationOn\":false,\"water\":{\"from\":\"0001-01-01T00:00:00\",\"to\":\"0001-01-01T00:00:00\"},\"wateritems\":[{\"starthour\":\"08:00\",\"intervalsec\":600},{\"starthour\":\"20:00\",\"intervalsec\":420}]}";
                 u1.Contacted = DateTime.Now;
-                u1.DeviceId = new Guid(EnvSettings.UNIT1);
+                u1.DeviceId = new Guid(apsettings.UNIT1);
                 u1.DogHouseHeatingOn = false;
                 u1.DogHouseTemperature = 10;
                 u1.IsWet = false;
@@ -53,7 +87,7 @@ namespace MySmartHomeCore.Models
                 var u2 = new Device();
                 u2.Config = "";
                 u2.Contacted = DateTime.Now;
-                u2.DeviceId = new Guid(EnvSettings.JABLOTRON);
+                u2.DeviceId = new Guid(apsettings.JABLOTRON);
                 u2.DogHouseHeatingOn = false;
                 u2.DogHouseTemperature = 10;
                 u2.IsWet = false;
@@ -71,7 +105,7 @@ namespace MySmartHomeCore.Models
                 var j = new Jablotron();
                 j.CommandToExecute = "";
                 j.Contacted = DateTime.Now;
-                j.DeviceId = new Guid(EnvSettings.JABLOTRON);
+                j.DeviceId = new Guid(apsettings.JABLOTRON);
                 j.State = "IDLE";
                 j.Note = "";
 
@@ -81,10 +115,6 @@ namespace MySmartHomeCore.Models
 
         public void SaveChanges()
         {
-            hashDevices = saveData(hashDevices, JsonConvert.SerializeObject(Devices), "devices");
-            hashDeviceLogs = saveData(hashDeviceLogs, JsonConvert.SerializeObject(DeviceLogs), "devicelogs");
-            hashEventLists = saveData(hashEventLists, JsonConvert.SerializeObject(EventLists), "eventlists");
-            hashJbalotrons = saveData(hashJbalotrons, JsonConvert.SerializeObject(Jablotrons), "jablotrons");
         }
 
         public string saveData(string origHash, string data, string obj)
@@ -92,7 +122,7 @@ namespace MySmartHomeCore.Models
             string tmpHash = getHash(data);
             if (tmpHash != origHash)
             {
-                File.WriteAllText(EnvSettings.WORKDIR+"/__"+obj+".json", data);
+                File.WriteAllText(apsettings.WORKDIR+"/__"+obj+".json", data);
             }
             return tmpHash;
         }
@@ -123,13 +153,28 @@ namespace MySmartHomeCore.Models
 
         private string loadData(out string origHash, string obj)
         {
-            string data = File.ReadAllText(EnvSettings.WORKDIR + "/__" + obj + ".json");
+            string data = File.ReadAllText(apsettings.WORKDIR + "/__" + obj + ".json");
             origHash = getHash(data);
             return data;
         }
 
-        public static SmartHomeDBContext Create()
+        public static SmartHomeDBContext Create(AppSettings settings)
         {
+            if (ctx.apsettings == null)
+            {
+                lock (ctx)
+                {
+                    if (ctx.apsettings == null)
+                    {
+                        ctx.apsettings = settings;
+                        ctx.Init();
+                        ctx.DataInit();
+
+                        ctx.thr = new Thread(new ParameterizedThreadStart(ctx.run));
+                        ctx.thr.Start();
+                    }
+                }
+            }
             return ctx;
         }
 

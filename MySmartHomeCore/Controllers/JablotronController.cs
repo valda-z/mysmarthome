@@ -1,15 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using MySmartHomeCore;
 using MySmartHomeCore.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
 
 namespace MySmartHomeCore.Controllers
 {
@@ -30,7 +25,7 @@ namespace MySmartHomeCore.Controllers
         {
             var gid = new Guid(id);
             var obj = JablotronDataList.Create(data.ToString());
-            var cx = SmartHomeDBContext.Create();
+            var cx = SmartHomeDBContext.Create(AppSettings);
             // get device detail, if there is no device we will throw exception
             var device = cx.Jablotrons.Single(e => e.DeviceId == gid);
             var prevData = new JablotronData();

@@ -16,4 +16,5 @@ RUN dotnet publish "MySmartHomeCore.csproj" -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
+RUN rm appsettings.*
 ENTRYPOINT ["dotnet", "MySmartHomeCore.dll"]
