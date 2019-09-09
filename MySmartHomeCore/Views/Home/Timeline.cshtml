@@ -19,23 +19,23 @@
             {
                 case "ALARM-IDLE":
                     itmColor = "";
-                    itmIcon = "home";
+                    itmIcon = "☆";
                     itmSpecial = "timeline-inverted";
                     break;
                 case "ALARM-ARMED":
                     itmColor = "warning";
-                    itmIcon = "home";
+                    itmIcon = "★";
                     itmSpecial = "timeline-inverted";
                     break;
                 case "ALARM-ALARM":
                     itmColor = "danger";
-                    itmIcon = "warning-sign";
+                    itmIcon = "⚠";
                     itmSpecial = "";
                     break;
             }
 
             <li class="@itmSpecial">
-                <div class="timeline-badge @itmColor"><i class="glyphicon glyphicon-@itmIcon"></i></div>
+                <div class="timeline-badge @itmColor"><b>@itmIcon</b></div>
                 <div class="timeline-panel">
                     <div class="timeline-heading">
                         <h4 class="timeline-title">@itm.Row1</h4>
