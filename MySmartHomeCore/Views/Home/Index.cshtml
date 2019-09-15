@@ -10,13 +10,13 @@
         @if (Model.unit1Offline)
         {
             <div class="alert alert-danger">
-                Outdoor unit is probably offline, last contact on: <strong>@Model.unit1.Contacted.ToString("yyyy-MM-dd HH:mm:ss")</strong> .
+                Outdoor unit is probably offline, last contact on: <strong>@MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(Model.unit1.Contacted,"yyyy-MM-dd HH:mm:ss")</strong> .
             </div>
         }
         @if (Model.jablotronOffline)
         {
             <div class="alert alert-danger">
-                Jablotron is probably offline, last contact on: <strong>@Model.unit1.Contacted.ToString("yyyy-MM-dd HH:mm:ss")</strong> .
+                Jablotron is probably offline, last contact on: <strong>@MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(Model.unit1.Contacted,"yyyy-MM-dd HH:mm:ss")</strong> .
             </div>
         }
 

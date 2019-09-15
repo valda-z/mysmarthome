@@ -319,7 +319,7 @@ namespace MySmartHomeCore.Controllers
                 itm.dogtemp = i.DogHouseTemp;
                 itm.iswet = i.IsWet;
                 itm.temp = i.Temp;
-                itm.time = i.Timestamp.ToString("HH:mm");
+                itm.time = MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(i.Timestamp, "HH:mm");
                 itm.wateron = i.WaterOn;
                 if (ret.min > itm.dogtemp)
                 {
