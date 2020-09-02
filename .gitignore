@@ -261,3 +261,4 @@ paket-files/
 __pycache__/
 *.pyc
 IoT/ESP-WiFi/OutdoorUnit/.mysecrets.h
+IoT/ESP-WiFi/JablotronUnit/.mysecrets.h
