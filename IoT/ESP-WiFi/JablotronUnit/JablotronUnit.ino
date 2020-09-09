@@ -530,7 +530,7 @@ void jaProcessMsg(){
       }
       else
       {
-          newState = JAB_ALARM;
+          newState = JAB_ARMED;
       }
   }
 
