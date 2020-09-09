@@ -10,6 +10,18 @@
 
 #include <HTTPClient.h>
 
+// ------------ DEBUG / TRACE
+//#define STRACE
+
+// Log serial device
+#ifdef STRACE
+#define LOG Serial
+#else
+#define LOG if(false) Serial
+#endif
+
+// ------------ defines
+
 QueueHandle_t queue;
 int queueSize = 10;
 
@@ -18,11 +30,9 @@ typedef enum {
     ALARMCMD_DISARM,
     ALARMCMD_ARM_A,
     ALARMCMD_ARM_B,
-    ALARMCMD_ARM_ABC
+    ALARMCMD_ARM_ABC,
+    ALARMCMD_NONE
 } AlarmCommands;
-
-// Log serial device
-#define LOG Serial
 
 WebServer server(11080);
 
@@ -34,9 +44,11 @@ WiFiMulti WiFiMulti;
 
 int sslSendDelay = 0;
 
+// https://forum.arduino.cc/index.php?topic=610249.0
 // https://navody.arduino-shop.cz/navody-k-produktum/esp32-a-hardwarova-seriova-linka.html
 #define RX1 16
 #define TX1 17
+#define HWSerialRENEG 4
 HardwareSerial hwSerial(1);
 
 // ############################
@@ -45,15 +57,55 @@ HardwareSerial hwSerial(1);
 // use include instead
 #include "C:\Src\MySmartHome\IoT\ESP-WiFi\JablotronUnit\.mysecrets.h"
 
+typedef enum {
+    JAB_IDLE,
+    JAB_ARMED,
+    JAB_OUTCOMMINGDELAY,
+    JAB_INCOMMINGDELAY,
+    JAB_ALARM,
+    JAB_DISCONNECTED
+} JablotronAlarmState;
 
-const int led = 13;
+typedef enum {
+    JAB_ZONE_A,
+    JAB_ZONE_B,
+    JAB_ZONE_ABC,
+    JAB_ZONE_NONE
+} JablotronAlarmZone;
+
+struct JABLOTRONDATA {
+  bool ledA;
+  bool ledB;
+  bool ledC;
+  bool ledWarning;
+  bool ledBacklight;
+  time_t lastContact;
+  /// 0x00 - Idle
+  /// 0x06 - Alarm
+  /// 0x0C - Outcomming timeout
+  /// 0x0D - Incomming timeout
+  /// 0x10 - Active detector
+  uint8_t messageId;
+  uint8_t deviceId;
+  uint8_t msgCRC;
+  JablotronAlarmState state;
+  JablotronAlarmZone zone;
+  bool isMovementThere;
+  time_t lastMove;
+};
+
+JABLOTRONDATA jadata = {false,false,false,false,false,0,0,0,0,JAB_DISCONNECTED, JAB_ZONE_NONE, false, 0};
+
+uint8_t jabRecBuf[10] = {0,0,0,0,0,0,0,0,0,0};
+int jabBufIndex = 0;
+AlarmCommands jabCmd = ALARMCMD_NONE;
 
 void handleRoot() {
   server.send(200, "text/plain", (jabIsMoving()?"1":"0"));
 }
 
 void handleNotFound() {
-  digitalWrite(led, 1);
+
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -66,7 +118,6 @@ void handleNotFound() {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(led, 0);
 }
 
 
@@ -86,16 +137,18 @@ void digitalClockDisplay() {
 }
 
 void setup(void) {
-  pinMode(led, OUTPUT);
-  digitalWrite(led, 0);
-  LOG.begin(115200);
+
+  Serial.begin(115200);
 
   queue = xQueueCreate( queueSize, sizeof( AlarmCommands ) );
 
   hwSerial.begin(9600, SERIAL_8N1, RX1, TX1);
 
+  pinMode(HWSerialRENEG, OUTPUT);
+  digitalWrite(HWSerialRENEG, LOW);
+
   if(queue == NULL){
-    Serial.println("Error creating the queue !!");
+    LOG.println("Error creating the queue !!");
     delay(1000);
     ESP.restart();
   }
@@ -149,11 +202,22 @@ void setup(void) {
 }
 
 // MySmartHome communication
-String createJSON(){
+String createJSON(String execcmd){
   DynamicJsonDocument doc(2048);
   String ret;
 
   doc["data"][0]["timestamp"] = MYTIME.dateTime(RFC3339_EXT);
+  doc["data"][0]["armedzone"] = jabAlarmZoneToString(jadata.zone);
+  doc["data"][0]["commandexecuted"] = execcmd;
+  doc["data"][0]["connected"] = jabIsConnected();
+  doc["data"][0]["deviceid"] = jadata.deviceId;
+  doc["data"][0]["led_a"] = jadata.ledA;
+  doc["data"][0]["led_b"] = jadata.ledB;
+  doc["data"][0]["led_backlight"] = jadata.ledBacklight;
+  doc["data"][0]["led_c"] = jadata.ledC;
+  doc["data"][0]["led_warning"] = jadata.ledWarning;
+  doc["data"][0]["state"] = jabAlarmStateToString(jadata.state);
+  doc["data"][0]["isalive"] = jabIsConnected();
 
   serializeJson(doc, ret);
 
@@ -163,7 +227,7 @@ String createJSON(){
   return ret;
 }
 
-String sendSSL(){
+String sendSSL(String execcmd){
     String ret = "";
     HTTPClient https;
 
@@ -173,7 +237,7 @@ String sendSSL(){
 
       LOG.print("[HTTPS] POST...\n");
       // start connection and send HTTP header
-      int httpCode = https.POST(createJSON());
+      int httpCode = https.POST(createJSON(execcmd));
 
       // httpCode will be negative on error
       if (httpCode > 0) {
@@ -221,6 +285,7 @@ void executeCMD(String cmd){
 
 // MAIN Loop!
 int iter = 0;
+String sslCmd = "";
 
 void loop(void) {
 
@@ -247,61 +312,71 @@ void loop(void) {
 
     setNTP();
 
-    String cmd = sendSSL();
-    if(cmd != ""){
+    sslCmd = sendSSL(sslCmd);
+    if(sslCmd != ""){
       LOG.print("Server command to execute: ");
-      LOG.println(cmd);
-      executeCMD(cmd);
+      LOG.println(sslCmd);
+      executeCMD(sslCmd);
+      // one second wait for next sending
+      sslSendDelay = 100;
     }
   }
   
   server.handleClient();
+  yield();
 
 }
 
 // ################## Task in CORE 0 -> RS485 communication - Jablotron JA82
-typedef enum {
-    JAB_IDLE,
-    JAB_ARMED,
-    JAB_OUTCOMMINGDELAY,
-    JAB_INCOMMINGDELAY,
-    JAB_ALARM,
-    JAB_DISCONNECTED
-} JablotronAlarmState;
 
-typedef enum {
-    JAB_ZONE_A,
-    JAB_ZONE_B,
-    JAB_ZONE_ABC,
-    JAB_ZONE_NONE
-} JablotronAlarmZone;
+String jabAlarmStateToString(JablotronAlarmState s){
+  String ret = "";
+  switch (s)
+  {
+    case JAB_IDLE:
+      ret = "IDLE";    
+      break;
+    case JAB_ARMED:
+      ret = "ARMED";    
+      break;
+    case JAB_OUTCOMMINGDELAY:
+      ret = "OUTCOMMINGDELAY";    
+      break;
+    case JAB_INCOMMINGDELAY:
+      ret = "INCOMMINGDELAY";    
+      break;
+    case JAB_ALARM:
+      ret = "ALARM";    
+      break;
+    case JAB_DISCONNECTED:
+      ret = "DISCONNECTED";    
+      break;
+    default:
+      ret = "ERROR";
+      break;
+  }
+  return ret;
+}
 
-struct JABLOTRONDATA {
-  bool ledA;
-  bool ledB;
-  bool ledC;
-  bool ledWarning;
-  bool ledBacklight;
-  time_t lastContact;
-  /// 0x00 - Idle
-  /// 0x06 - Alarm
-  /// 0x0C - Outcomming timeout
-  /// 0x0D - Incomming timeout
-  /// 0x10 - Active detector
-  uint8_t messageId;
-  uint8_t deviceId;
-  uint8_t msgCRC;
-  JablotronAlarmState state;
-  JablotronAlarmZone zone;
-  bool isMovementThere;
-  time_t lastMove;
-};
-
-JABLOTRONDATA jadata = {false,false,false,false,false,0,0,0,0,JAB_DISCONNECTED, JAB_ZONE_NONE, 0};
-
-uint8_t jabRecBuf[10] = {0,0,0,0,0,0,0,0,0,0};
-int jabBufIndex = 0;
-AlarmCommands jabCmd;
+String jabAlarmZoneToString(JablotronAlarmZone z){
+  String ret = "";
+  switch (z)
+  {
+    case JAB_ZONE_A:
+      ret = "A";
+      break;
+    case JAB_ZONE_B:
+      ret = "B";
+      break;
+    case JAB_ZONE_ABC:
+      ret = "ABC";
+      break;
+    default:
+      ret = "NONE";
+      break;
+  }
+  return ret;
+}
 
 void jabSetLastMove(){
   time_t t = UTC.now();
@@ -318,45 +393,81 @@ bool jabIsMoving(){
   return ((jadata.lastMove+600)>t);
 }
 
+void jabSetArm(uint8_t aid){
+  uint8_t x[8] = { 0x8F, 0xFF, 0xA0, 0xFF, 0x82, 0xFF, 0xA1, 0xFF };
+  x[4] = aid;
+  digitalWrite(HWSerialRENEG, HIGH);
+  hwSerial.write(x, 8);
+  digitalWrite(HWSerialRENEG, LOW);
+}
+
 void jabSetArmA(){
-    uint8_t x[8] = { 0x8F, 0xFF, 0xA0, 0xFF, 0x82, 0xFF, 0xA1, 0xFF };
-    hwSerial.write(x, 8);
+  jabSetArm(0x82);
 }
 
 void jabSetArmB(){
-    uint8_t x[8] = { 0x8F, 0xFF, 0xA0, 0xFF, 0x83, 0xFF, 0xA1, 0xFF };
-    hwSerial.write(x, 8);
+  jabSetArm(0x83);
 }
 
 void jabSetArmABC(){
-    uint8_t x[8] = { 0x8F, 0xFF, 0xA0, 0xFF, 0x81, 0xFF, 0xA1, 0xFF };
-    hwSerial.write(x, 8);
+  jabSetArm(0x81);
 }
 
 void jabChangeArm(){
-  uint8_t x;
   uint8_t pin[JABPINLEN] = JABPIN;
   int ilen = 0;
   int i;
-  for(i=0; i<JABPINLEN; i++){
-    //format PIN and put to buffer
-    x = pin[i] + 0x80;
-    hwSerial.write(x);
-    if ((i + 1) < JABPINLEN)
-    {
-        x = 0xA0;
-    }
-    else
-    {
-        x = 0xA2;
-    }
-    hwSerial.write(x);
-  }
+  digitalWrite(HWSerialRENEG, HIGH);
+
+  hwSerial.write(pin, 16);
+  hwSerial.flush();
+  digitalWrite(HWSerialRENEG, LOW);
+  LOG.println("  <- DONE");
+}
+
+bool jabIsConnected(){
+  time_t t = UTC.now();
+  return ((jadata.lastContact+10)>t);
 }
 
 // process message
 // ED 51 0C 00 09 04 00 00 73 FF
 void jaProcessMsg(){
+
+  // send command if there is any
+  if(xQueueReceive(queue, &jabCmd, 0)){
+    // sending right command
+    switch (jabCmd)
+    {
+      case ALARMCMD_ARM_A:
+        LOG.println("JAB -> ALARMCMD_ARM_A");
+        jabSetArmA();
+        break;
+      case ALARMCMD_ARM_B:
+        LOG.println("JAB -> ALARMCMD_ARM_B");
+        jabSetArmB();
+        break;
+      case ALARMCMD_ARM_ABC:
+        LOG.println("JAB -> ALARMCMD_ARM_ABC");
+        jabSetArmABC();
+        break;
+
+      case ALARMCMD_ARM:
+        LOG.println("JAB -> ALARMCMD_ARM");
+        jabChangeArm();
+        break;
+      case ALARMCMD_DISARM:
+        LOG.println("JAB -> ALARMCMD_DISARM");
+        jabChangeArm();
+        break;
+      
+      default:
+        break;
+    }
+    jabCmd = ALARMCMD_NONE;
+    sslSendDelay = 100;
+  }
+
   // we have message (10 bytes long)
   jadata.lastContact = UTC.now();
 
@@ -444,40 +555,6 @@ void jaProcessMsg(){
       jabSetLastMove();
   }
 
-  // send command if there is any
-  if(xQueueReceive(queue, &jabCmd, 0)){
-    // sending right command
-
-    switch (jabCmd)
-    {
-      case ALARMCMD_ARM_A:
-        LOG.println("JAB -> ALARMCMD_ARM_A");
-        jabSetArmA();
-        break;
-      case ALARMCMD_ARM_B:
-        LOG.println("JAB -> ALARMCMD_ARM_B");
-        jabSetArmB();
-        break;
-      case ALARMCMD_ARM_ABC:
-        LOG.println("JAB -> ALARMCMD_ARM_ABC");
-        jabSetArmABC();
-        break;
-
-      case ALARMCMD_ARM:
-        LOG.println("JAB -> ALARMCMD_ARM");
-        jabChangeArm();
-        break;
-      case ALARMCMD_DISARM:
-        LOG.println("JAB -> ALARMCMD_DISARM");
-        jabChangeArm();
-        break;
-      
-      default:
-        break;
-    }
-
-    sslSendDelay = 100;
-  }
 }
 
 void Task0code( void * pvParameters ){
@@ -516,6 +593,12 @@ void Task0code( void * pvParameters ){
       // no data, starting from zero ..
       jabBufIndex = 0;
       LOG.println("  -> JAB-ERR: No data received");
+      yield();
+      vTaskDelay(1);
+    }
+    if(jabBufIndex==0){
+      yield();
+      vTaskDelay(1);
     }
   } 
 }
