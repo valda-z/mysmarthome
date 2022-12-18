@@ -4,10 +4,10 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2-stretch AS build
 WORKDIR /src
-COPY ["MySmartHomeCore/MySmartHomeCore.csproj", "MySmartHomeCore/"]
-RUN dotnet restore "MySmartHomeCore/MySmartHomeCore.csproj"
+COPY ["MySmartHomeCore.csproj", "."]
+RUN dotnet restore "MySmartHomeCore.csproj"
 COPY . .
-WORKDIR "/src/MySmartHomeCore"
+WORKDIR "/src"
 RUN dotnet build "MySmartHomeCore.csproj" -c Release -o /app
 
 FROM build AS publish

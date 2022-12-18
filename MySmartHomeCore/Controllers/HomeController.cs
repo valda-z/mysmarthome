@@ -158,7 +158,16 @@ namespace MySmartHomeCore.Controllers
                         cx.SaveChanges();
                         return RedirectToAction("Index");
                     }
-                    //break;
+                //break;
+                case "switchheating":
+                    {
+                        var conf = SmartHomeConfig.Deserialize(model.unit1.Config);
+                        conf.dogontemp = conf.dogontemp<-99.0 ? 10 : -100.0;
+                        model.unit1.Config = conf.Serialize();
+                        cx.SaveChanges();
+                        return RedirectToAction("Index");
+                    }
+                //break;
                 case "switchalarm":
                     {
                         if (model.jablotron.CommandToExecute == "")

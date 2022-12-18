@@ -2,6 +2,14 @@
 @{
     ViewBag.Title = "Setting";
     List<SelectListItem> tempList = new List<SelectListItem>();
+    {
+        var i = -100;
+        var itm = new SelectListItem();
+        itm.Value = i.ToString();
+        itm.Text = i.ToString();
+        itm.Selected = (((int)Model.dogontemp) == i);
+        tempList.Add(itm);
+    }
     for (int i = 0; i < 16; i++)
     {
         var itm = new SelectListItem();

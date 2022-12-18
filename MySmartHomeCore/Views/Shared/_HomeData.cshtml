@@ -2,6 +2,7 @@
 @{
     var conf1 = MySmartHomeCore.Models.SmartHomeConfig.Deserialize(Model.unit1.Config);
     bool alarmState = (Model.jablotron.State != "IDLE");
+    bool heatingState = (conf1.dogontemp < -99.0);
     if (Model.jablotron.CommandToExecute != "")
     {
         alarmState = Model.jablotron.CommandToExecute != "DISARM";
@@ -115,6 +116,7 @@
                                     Heating
                                 </div>
                                 <div class="col col-sm-6  pull-right text-right">
+                                    <img onclick="window.location.href='/?cmd=switchheating'" src="@Html.Raw(heatingState ? "/Img/toggle-on-red.png" : "/Img/toggle-off.png" )" style="height: 24px; cursor: pointer" />    
                                     <span class="badge @Html.Raw(Model.unit1.DogHouseHeatingOn?"badge-danger":"badge-secondary")">@(Model.unit1.DogHouseHeatingOn ? "ON" : "OFF")</span>
                                 </div>
                             </div>
