@@ -4,7 +4,11 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2-stretch AS build
 WORKDIR /src
+<<<<<<< HEAD
 COPY ["MySmartHomeCore.csproj", "."]
+=======
+COPY MySmartHomeCore.csproj .
+>>>>>>> 7b08cef (docker file)
 RUN dotnet restore "MySmartHomeCore.csproj"
 COPY . .
 WORKDIR "/src"
