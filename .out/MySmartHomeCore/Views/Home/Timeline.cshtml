@@ -1,0 +1,56 @@
+﻿@model IQueryable<MySmartHomeCore.Models.EventList>
+@{
+    ViewBag.Title = "Timeline";
+}
+
+<div class="container">
+    <div class="page-header">
+        <h1 id="timeline">Timeline</h1>
+    </div>
+    <ul class="timeline">
+        @foreach (var it in Model)
+        {
+            var itm = MySmartHomeCore.Models.EventListEntry.Deserialize(it.EventText);
+            var itmColor = "";
+            var itmIcon = "";
+            var itmSpecial = "";
+
+            switch (it.EventCode)
+            {
+                case "ALARM-IDLE":
+                    itmColor = "";
+                    itmIcon = "☆";
+                    itmSpecial = "timeline-inverted";
+                    break;
+                case "ALARM-ARMED":
+                    itmColor = "warning";
+                    itmIcon = "★";
+                    itmSpecial = "timeline-inverted";
+                    break;
+                case "ALARM-ALARM":
+                    itmColor = "danger";
+                    itmIcon = "⚠";
+                    itmSpecial = "";
+                    break;
+            }
+
+            <li class="@itmSpecial">
+                <div class="timeline-badge @itmColor"><b>@itmIcon</b></div>
+                <div class="timeline-panel">
+                    <div class="timeline-heading">
+                        <h4 class="timeline-title">@itm.Row1</h4>
+                        <p><small class="text-muted"><i class="glyphicon glyphicon-time"></i> @MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(it.Created,"d.M.yyyy H:mm")</small></p>
+                    </div>
+                    @if (itm.Row2 != "")
+                    {
+                        <div class="timeline-body">
+                            <p>@itm.Row2</p>
+                        </div>
+                    }
+                </div>
+            </li>
+
+        }
+    </ul>
+</div>
+

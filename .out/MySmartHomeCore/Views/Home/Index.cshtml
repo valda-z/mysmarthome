@@ -1,0 +1,58 @@
+﻿@model MySmartHomeCore.Controllers.HomeController.HomeIndexData
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<br/>
+
+<div class="row">
+    <div class="col-md-12">
+        @if (Model.unit1Offline)
+        {
+            <div class="alert alert-danger">
+                Outdoor unit is probably offline, last contact on: <strong>@MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(Model.unit1.Contacted,"yyyy-MM-dd HH:mm:ss")</strong> .
+            </div>
+        }
+        @if (Model.jablotronOffline)
+        {
+            <div class="alert alert-danger">
+                Jablotron is probably offline, last contact on: <strong>@MySmartHomeCore.Extensions.DateTimeUtil.GetZonedDate(Model.unit1.Contacted,"yyyy-MM-dd HH:mm:ss")</strong> .
+            </div>
+        }
+
+        <div id="innerData">
+            @Html.Partial("_HomeData", Model)
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var dataHash = "@Model.checksum()";
+
+    function readData() {
+        $.ajax({
+            url: "/Home/IndexHash",
+            timeout: 2000,
+            success: function (data) {
+                if (data != dataHash) {
+                    dataHash = data;
+                    $.ajax(
+                        {
+                            url: "/Home/IndexPartial",
+                            timeout: 2000,
+                            success: function (data) {
+                                $('#innerData').html(data);
+                            }
+                        });
+                }
+                setTimeout(readData, 2000);
+            },
+            error: function () {
+                setTimeout(readData, 2000);
+            }
+        });
+    }
+
+    setTimeout(readData, 2000);
+</script>
