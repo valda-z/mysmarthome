@@ -22,7 +22,7 @@ v 1.0.0
 // #define UNITID "XXXX"
 // #define WIFIPWD "XXXX"
 // use include instead
-#include "C:\Src\MySmartHome\IoT\ESP-WiFi\OutdoorUnit\.mysecrets.h"
+#include "/Users/valda/src/mysmarthome/IoT/ESP-WiFi/outdoorunit/.mysecrets.h"
 
 // Fingerprint for demo URL, expires on June 2, 2019, needs to be updated well before this date
 // const uint8_t fingerprint[20] = {0x5A, 0xCF, 0xFE, 0xF0, 0xF1, 0xA6, 0xF4, 0x5F, 0xD2, 0x11, 0x11, 0xC6, 0x1D, 0x2F, 0x0E, 0xBC, 0x39, 0x8D, 0x50, 0xE0};
